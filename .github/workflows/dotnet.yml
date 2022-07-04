@@ -18,7 +18,7 @@ jobs:
     - name: Setup dotnet environment
       uses: actions/setup-dotnet@master
       with:
-        dotnet-version: '3.1.100'
+        dotnet-version: '1.3.2'
     - name: Restore dotnet tools
       run: dotnet tool restore
     - name: Fetch complete repository 
@@ -41,7 +41,7 @@ jobs:
     - name: Setup dotnet environment
       uses: actions/setup-dotnet@master
       with:
-        dotnet-version: '3.1.100'
+        dotnet-version: '1.3.2'
     - name: Download version info file
       uses: actions/download-artifact@v1
       with:
@@ -69,7 +69,7 @@ jobs:
     - name: Setup dotnet environment
       uses: actions/setup-dotnet@master
       with:
-        dotnet-version: '3.1.100'
+        dotnet-version: '1.3.2'
     - name: Download version info file
       uses: actions/download-artifact@v1
       with:
