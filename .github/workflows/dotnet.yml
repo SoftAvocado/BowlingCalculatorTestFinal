@@ -7,75 +7,21 @@ on:
     branches: [ "main" ]
 
 jobs:
-  generateVersionInfo:  
-    name: GenerateVersionInfo
+  build-test:
     runs-on: windows-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - name: Setup dotnet environment
-      uses: actions/setup-dotnet@master
-      with:
-        dotnet-version: '1.3.2'
-    - name: Restore dotnet tools
-      run: dotnet tool restore
-    - name: Fetch complete repository 
-      run: git fetch
-    - name: Generate version info from git history
-      run: dotnet dotnet-gitversion /output json | Out-File gitversion.json; Get-Content gitversion.json
-    - name: Upload version info file
-      uses: actions/upload-artifact@v1
-      with:
-        name: gitversion
-        path: gitversion.json
 
-  build:
-    name: Build
-    needs: generateVersionInfo
-    runs-on: windows-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Setup dotnet environment
-      uses: actions/setup-dotnet@master
-      with:
-        dotnet-version: '1.3.2'
-    - name: Download version info file
-      uses: actions/download-artifact@v1
-      with:
-        name: gitversion
-        path: ./
-    - name: Inject version info into environment
-      run: Get-Content gitversion.json | ConvertFrom-Json | ForEach-Object { foreach ($item in $_.PSObject.properties) { "::set-env name=GitVersion_$($item.Name)::$($item.Value)" } }; $env:GitVersion_SemVer
-    - name: Build solution
-      run: dotnet build -c Release
-    - name: Create NuGet packages
-      run: dotnet pack -c Release --no-build -o nupkg 
-    - name: Upload nuget packages
-      uses: actions/upload-artifact@v1
-      with:
-        name: nupkg
-        path: nupkg
+    strategy:
+      matrix:
+        version: [net461]
 
-  test:
-    name: Test
-    needs: [build, generateVersionInfo]
-    runs-on: windows-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Setup dotnet environment
-      uses: actions/setup-dotnet@master
-      with:
-        dotnet-version: '1.3.2'
-    - name: Download version info file
-      uses: actions/download-artifact@v1
-      with:
-        name: gitversion
-        path: ./
-    - name: Inject version info into environment
-      run: Get-Content gitversion.json | ConvertFrom-Json | ForEach-Object { foreach ($item in $_.PSObject.properties) { "::set-env name=GitVersion_$($item.Name)::$($item.Value)" } }
-    - name: Run tests
-      run: dotnet test -c Release -p:ParallelizeTestCollections=false
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test ${{ matrix.version }}
+      run: dotnet test **\bin\**\${{ matrix.version }}\*Tests.dll --configuration Release --no-build --logger:"console;verbosity=detailed"
